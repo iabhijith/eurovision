@@ -31,11 +31,16 @@ public class Commands {
     @ShellMethod(value = "Upload votes for counting", key = "eurovision")
     public String euroVisionCommands(String option, String input, String year) {
         if(option.equals("load")) {
-            votesProcessor.processVotes(input, year);
-            return "uploading complete!";
+            if(votesProcessor.processVotes(input, year)){
+                return "Processing complete!";
+            } else {
+                return "Failed to process!";
+            }
+
         } else if (option.equals("results")){
-            results.queryResults(input, year);
-            return "--End--";
+            String resultHeader = String.format("%s %s voting results:\n", input, year);
+            String result = results.queryResults(input, year);
+            return resultHeader + result;
         }
         return "Invalid options";
     }

@@ -20,14 +20,15 @@ public class VotesQueueProcessor implements VotesProcessor{
 
     public static final int CONSUMER_COUNT = 5;
     private final BlockingQueue<String> linesReadQueue = new ArrayBlockingQueue<>(30);
-    private boolean producerDone = false;
 
     @Override
     public boolean processVotes(String fileName, String year) {
 
+        //A single producer for reading the file and writing to blocking queue
         ExecutorService producerPool = Executors.newFixedThreadPool(1);
         producerPool.submit(new Producer(fileName, linesReadQueue, CONSUMER_COUNT));
 
+        // N Consumers to read from the blocking queue and process each line
         ExecutorService consumerPool = Executors.newFixedThreadPool(CONSUMER_COUNT);
         List<Future<Map<String, Map<String, Long>>>> futureResults = new ArrayList<>();
         for (int i = 0; i < CONSUMER_COUNT; i++) {
@@ -40,6 +41,7 @@ public class VotesQueueProcessor implements VotesProcessor{
 
         List<Map<String, Map<String, Long>>> results = new ArrayList<>();
 
+        // Wait for the results from all the consumers
         try {
             for (Future<Map<String, Map<String, Long>>> futureResult: futureResults
                     ) {
@@ -50,23 +52,16 @@ public class VotesQueueProcessor implements VotesProcessor{
             return false;
         }
 
+        // Merge the results from the consumers
         Map<String, Map<String,Long>> finalResults = results.stream().parallel()
                 .map(Map::entrySet)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
                         (a, b)-> Stream.of(a, b).parallel().map(Map::entrySet).flatMap(Collection::stream)
                                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,Long::sum))));
+        // Write the result to year.json file
         this.writeResult(year,finalResults);
         return true;
-    }
-
-
-    protected boolean isProducerDone(){
-        return this.producerDone;
-    }
-
-    protected void setProducerDone(boolean status) {
-        this.producerDone = status;
     }
 
 

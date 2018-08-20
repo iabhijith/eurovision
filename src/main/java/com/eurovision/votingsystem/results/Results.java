@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 /**
@@ -15,23 +16,22 @@ import java.util.Map;
  */
 public class Results {
     Map<String, Map<String, Long>> results;
-    public void queryResults(String country, String year) {
+    public String queryResults(String country, String year) {
         try {
             results = new ObjectMapper().readValue(new File(year+".json"), Map.class);
             Map<String, Long> countryResults = results.getOrDefault(country, new HashMap<>());
             //If the country have no votes
             if(countryResults.isEmpty()) {
-                System.out.println("No results for the country found");
-                return;
+                return String.format("No results for %s found", country);
             }
-            //Output the results for the country for the given year.
-            System.out.println(String.format("%s %s voting results:", country, year));
-            countryResults.entrySet().stream().sorted(Map.Entry.<String, Long>comparingByValue().reversed())
-                    .limit(10).forEach(stringLongEntry ->
-                    System.out.println(stringLongEntry.getValue()+ " points goes to "+ stringLongEntry.getKey()));
+            //Collect the results for the country for the given year
+            return countryResults.entrySet().stream().sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                    .limit(10)
+                    .map(stringLongEntry -> stringLongEntry.getValue()+ " points goes to "+ stringLongEntry.getKey())
+                    .collect(Collectors.joining("\n"));
 
         } catch (IOException e) {
-            System.out.println(e.getMessage());
+            return "Couldn't fetch the results for the given query!";
         }
 
     }

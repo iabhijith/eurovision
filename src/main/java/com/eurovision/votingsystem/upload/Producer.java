@@ -15,7 +15,7 @@ public class Producer implements Runnable {
      *
      * @param fileName The location of the file to process votes
      * @param linesReadQueue The BlockingQueue into which the producer puts each line
-     * @param consumerCount The orchestrator which runs producers and consumers
+     * @param consumerCount The number of  consumers
      */
     public Producer(String fileName, BlockingQueue<String> linesReadQueue, int consumerCount) {
         this.fileName = fileName;
